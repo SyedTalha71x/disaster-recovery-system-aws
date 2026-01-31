@@ -1,0 +1,50 @@
+############################
+# Terraform
+############################
+
+# Local .terraform directories
+**/.terraform/*
+.terraform/
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Terraform plan files
+*.tfplan
+
+# Terraform lock file (OPTIONAL)
+# Agar team ke sath kaam kar rahe ho to isko ignore na karo
+.terraform.lock.hcl
+
+# Terraform variables (sensitive ho sakti hain)
+*.tfvars
+*.tfvars.json
+
+# Crash logs
+crash.log
+
+############################
+# Environment files
+############################
+.env
+.env.*
+
+############################
+# Node.js
+############################
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+############################
+# OS / Editor junk
+############################
+
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
