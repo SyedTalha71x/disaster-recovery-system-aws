@@ -59,7 +59,7 @@ resource "aws_instance" "primary_mysql_master" {
   }
 
   # Ensure VPC peering is ready first
-  depends_on = [aws_vpc_peering_connection_accepter.secondary]
+  depends_on = [aws_vpc_peering_connection_accepter.secondary, aws_nat_gateway.primary]
 }
 
 # Web Server - Primary
@@ -112,7 +112,8 @@ resource "aws_instance" "secondary_mysql_slave" {
 
   depends_on = [
     aws_instance.primary_mysql_master,
-    aws_vpc_peering_connection_accepter.secondary
+    aws_vpc_peering_connection_accepter.secondary,
+    aws_nat_gateway.secondary
   ]
 }
 

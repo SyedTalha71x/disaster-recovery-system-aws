@@ -45,7 +45,7 @@ resource "aws_subnet" "primary_private" {
   vpc_id                  = aws_vpc.primary.id
   cidr_block              = cidrsubnet(var.primary_vpc_cidr, 8, 10)
   availability_zone       = data.aws_availability_zones.primary.names[0]
-  map_public_ip_on_launch = true  # For easy SSH access during setup
+  map_public_ip_on_launch = false 
 
   tags = {
     Name = "${var.project_name}-primary-private-subnet"
@@ -93,7 +93,53 @@ resource "aws_route_table_association" "primary_public_2" {
 resource "aws_route_table_association" "primary_private" {
   provider       = aws.primary
   subnet_id      = aws_subnet.primary_private.id
-  route_table_id = aws_route_table.primary_public.id
+  route_table_id = aws_route_table.primary_private.id
+}
+
+
+# eip for nat gateway
+resource "aws_eip" "primary_nat" {
+  provider =  aws.primary
+  domain = "vpc"
+
+  tags = {
+    Name = "${var.project_name}-primary-nat-eip"
+  }
+  
+}
+
+
+# nat gateway
+resource "aws_nat_gateway" "primary" {
+  provider      = aws.primary
+  allocation_id = aws_eip.primary_nat.id
+  subnet_id     = aws_subnet.primary_public_1.id
+  
+  tags = {
+    Name = "${var.project_name}-primary-nat"
+  }
+  
+  depends_on = [aws_internet_gateway.primary]
+}
+
+resource "aws_route_table" "primary_private" {
+  provider = aws.primary
+  vpc_id   = aws_vpc.primary.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.primary.id
+  }
+
+  # Route for VPC peering to secondary
+  route {
+    cidr_block                = var.secondary_vpc_cidr
+    vpc_peering_connection_id = aws_vpc_peering_connection.primary_to_secondary.id
+  }
+
+  tags = {
+    Name = "${var.project_name}-primary-private-rt"
+  }
 }
 
 # ==========================================
@@ -143,7 +189,7 @@ resource "aws_subnet" "secondary_private" {
   vpc_id                  = aws_vpc.secondary.id
   cidr_block              = cidrsubnet(var.secondary_vpc_cidr, 8, 10)
   availability_zone       = data.aws_availability_zones.secondary.names[0]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
 
   tags = {
     Name = "${var.project_name}-secondary-private-subnet"
@@ -191,9 +237,48 @@ resource "aws_route_table_association" "secondary_public_2" {
 resource "aws_route_table_association" "secondary_private" {
   provider       = aws.secondary
   subnet_id      = aws_subnet.secondary_private.id
-  route_table_id = aws_route_table.secondary_public.id
+  route_table_id = aws_route_table.secondary_private.id
 }
 
+resource "aws_eip" "secondary_nat" {
+  provider = aws.secondary
+  domain   = "vpc"
+  tags = {
+    Name = "${var.project_name}-secondary-nat-eip"
+  }
+}
+
+resource "aws_nat_gateway" "secondary" {
+  provider      = aws.secondary
+  allocation_id = aws_eip.secondary_nat.id
+  subnet_id     = aws_subnet.secondary_public_1.id
+  
+  tags = {
+    Name = "${var.project_name}-secondary-nat"
+  }
+  
+  depends_on = [aws_internet_gateway.secondary]
+}
+
+resource "aws_route_table" "secondary_private" {
+  provider = aws.secondary
+  vpc_id   = aws_vpc.secondary.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.secondary.id
+  }
+
+  # Route for VPC peering to primary
+  route {
+    cidr_block                = var.primary_vpc_cidr
+    vpc_peering_connection_id = aws_vpc_peering_connection.primary_to_secondary.id
+  }
+
+  tags = {
+    Name = "${var.project_name}-secondary-private-rt"
+  }
+}
 # Data sources for AZs
 data "aws_availability_zones" "primary" {
   provider = aws.primary
