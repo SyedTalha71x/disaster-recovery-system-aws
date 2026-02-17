@@ -114,29 +114,4 @@ output "ssh_secondary_web" {
   value       = "ssh -i ${var.key_name_secondary}.pem ec2-user@${aws_instance.secondary_web.public_ip}"
 }
 
-# ==========================================
-# DATABASE CONNECTION INFO
-# ==========================================
-
-output "database_connection_primary" {
-  description = "Database connection string for Primary"
-  value = {
-    host     = aws_instance.primary_mysql_master.private_ip
-    database = var.db_name
-    username = "appuser"
-    password = var.mysql_app_password
-  }
-  sensitive = true
-}
-
-output "database_connection_secondary" {
-  description = "Database connection string for Secondary (Read-Only)"
-  value = {
-    host     = aws_instance.secondary_mysql_slave.private_ip
-    database = var.db_name
-    username = "appuser"
-    password = var.mysql_app_password
-  }
-  sensitive = true
-}
 

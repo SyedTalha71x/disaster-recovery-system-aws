@@ -1,5 +1,6 @@
+
 # ==========================================
-# PRIMARY REGION VPC
+# PRIMARY REGION VPC - UPDATED
 # ==========================================
 
 resource "aws_vpc" "primary" {
@@ -9,7 +10,7 @@ resource "aws_vpc" "primary" {
   enable_dns_support   = true
 
   tags = {
-    Name = "${var.project_name}-primary-vpc"
+    Name   = "${var.project_name}-primary-vpc"
     Region = var.primary_region
   }
 }
@@ -23,7 +24,7 @@ resource "aws_subnet" "primary_public_1" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.project_name}-primary-public-subnet-1"
+    Name = "${var.project_name}-primary-public-1"
   }
 }
 
@@ -35,20 +36,32 @@ resource "aws_subnet" "primary_public_2" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.project_name}-primary-public-subnet-2"
+    Name = "${var.project_name}-primary-public-2"
   }
 }
 
-# Private Subnet - Primary
-resource "aws_subnet" "primary_private" {
+# Private Subnets - Primary (for RDS - need 2 for Multi-AZ)
+resource "aws_subnet" "primary_private_1" {
   provider                = aws.primary
   vpc_id                  = aws_vpc.primary.id
   cidr_block              = cidrsubnet(var.primary_vpc_cidr, 8, 10)
   availability_zone       = data.aws_availability_zones.primary.names[0]
-  map_public_ip_on_launch = false 
+  map_public_ip_on_launch = false
 
   tags = {
-    Name = "${var.project_name}-primary-private-subnet"
+    Name = "${var.project_name}-primary-private-1"
+  }
+}
+
+resource "aws_subnet" "primary_private_2" {
+  provider                = aws.primary
+  vpc_id                  = aws_vpc.primary.id
+  cidr_block              = cidrsubnet(var.primary_vpc_cidr, 8, 11)
+  availability_zone       = data.aws_availability_zones.primary.names[1]
+  map_public_ip_on_launch = false
+
+  tags = {
+    Name = "${var.project_name}-primary-private-2"
   }
 }
 
@@ -62,7 +75,30 @@ resource "aws_internet_gateway" "primary" {
   }
 }
 
-# Route Table - Primary
+# EIP for NAT Gateway
+resource "aws_eip" "primary_nat" {
+  provider = aws.primary
+  domain   = "vpc"
+
+  tags = {
+    Name = "${var.project_name}-primary-nat-eip"
+  }
+}
+
+# NAT Gateway
+resource "aws_nat_gateway" "primary" {
+  provider      = aws.primary
+  allocation_id = aws_eip.primary_nat.id
+  subnet_id     = aws_subnet.primary_public_1.id
+
+  tags = {
+    Name = "${var.project_name}-primary-nat"
+  }
+
+  depends_on = [aws_internet_gateway.primary]
+}
+
+# Public Route Table
 resource "aws_route_table" "primary_public" {
   provider = aws.primary
   vpc_id   = aws_vpc.primary.id
@@ -77,7 +113,22 @@ resource "aws_route_table" "primary_public" {
   }
 }
 
-# Route Table Associations - Primary
+# Private Route Table
+resource "aws_route_table" "primary_private" {
+  provider = aws.primary
+  vpc_id   = aws_vpc.primary.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.primary.id
+  }
+
+  tags = {
+    Name = "${var.project_name}-primary-private-rt"
+  }
+}
+
+# Route Table Associations
 resource "aws_route_table_association" "primary_public_1" {
   provider       = aws.primary
   subnet_id      = aws_subnet.primary_public_1.id
@@ -90,60 +141,20 @@ resource "aws_route_table_association" "primary_public_2" {
   route_table_id = aws_route_table.primary_public.id
 }
 
-resource "aws_route_table_association" "primary_private" {
+resource "aws_route_table_association" "primary_private_1" {
   provider       = aws.primary
-  subnet_id      = aws_subnet.primary_private.id
+  subnet_id      = aws_subnet.primary_private_1.id
   route_table_id = aws_route_table.primary_private.id
 }
 
-
-# eip for nat gateway
-resource "aws_eip" "primary_nat" {
-  provider =  aws.primary
-  domain = "vpc"
-
-  tags = {
-    Name = "${var.project_name}-primary-nat-eip"
-  }
-  
-}
-
-
-# nat gateway
-resource "aws_nat_gateway" "primary" {
-  provider      = aws.primary
-  allocation_id = aws_eip.primary_nat.id
-  subnet_id     = aws_subnet.primary_public_1.id
-  
-  tags = {
-    Name = "${var.project_name}-primary-nat"
-  }
-  
-  depends_on = [aws_internet_gateway.primary]
-}
-
-resource "aws_route_table" "primary_private" {
-  provider = aws.primary
-  vpc_id   = aws_vpc.primary.id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.primary.id
-  }
-
-  # Route for VPC peering to secondary
-  route {
-    cidr_block                = var.secondary_vpc_cidr
-    vpc_peering_connection_id = aws_vpc_peering_connection.primary_to_secondary.id
-  }
-
-  tags = {
-    Name = "${var.project_name}-primary-private-rt"
-  }
+resource "aws_route_table_association" "primary_private_2" {
+  provider       = aws.primary
+  subnet_id      = aws_subnet.primary_private_2.id
+  route_table_id = aws_route_table.primary_private.id
 }
 
 # ==========================================
-# SECONDARY REGION VPC
+# SECONDARY REGION VPC - UPDATED
 # ==========================================
 
 resource "aws_vpc" "secondary" {
@@ -153,7 +164,7 @@ resource "aws_vpc" "secondary" {
   enable_dns_support   = true
 
   tags = {
-    Name = "${var.project_name}-secondary-vpc"
+    Name   = "${var.project_name}-secondary-vpc"
     Region = var.secondary_region
   }
 }
@@ -167,7 +178,7 @@ resource "aws_subnet" "secondary_public_1" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.project_name}-secondary-public-subnet-1"
+    Name = "${var.project_name}-secondary-public-1"
   }
 }
 
@@ -179,12 +190,12 @@ resource "aws_subnet" "secondary_public_2" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.project_name}-secondary-public-subnet-2"
+    Name = "${var.project_name}-secondary-public-2"
   }
 }
 
-# Private Subnet - Secondary
-resource "aws_subnet" "secondary_private" {
+# Private Subnets - Secondary (for RDS replica)
+resource "aws_subnet" "secondary_private_1" {
   provider                = aws.secondary
   vpc_id                  = aws_vpc.secondary.id
   cidr_block              = cidrsubnet(var.secondary_vpc_cidr, 8, 10)
@@ -192,7 +203,19 @@ resource "aws_subnet" "secondary_private" {
   map_public_ip_on_launch = false
 
   tags = {
-    Name = "${var.project_name}-secondary-private-subnet"
+    Name = "${var.project_name}-secondary-private-1"
+  }
+}
+
+resource "aws_subnet" "secondary_private_2" {
+  provider                = aws.secondary
+  vpc_id                  = aws_vpc.secondary.id
+  cidr_block              = cidrsubnet(var.secondary_vpc_cidr, 8, 11)
+  availability_zone       = data.aws_availability_zones.secondary.names[1]
+  map_public_ip_on_launch = false
+
+  tags = {
+    Name = "${var.project_name}-secondary-private-2"
   }
 }
 
@@ -206,7 +229,30 @@ resource "aws_internet_gateway" "secondary" {
   }
 }
 
-# Route Table - Secondary
+# EIP for NAT Gateway
+resource "aws_eip" "secondary_nat" {
+  provider = aws.secondary
+  domain   = "vpc"
+
+  tags = {
+    Name = "${var.project_name}-secondary-nat-eip"
+  }
+}
+
+# NAT Gateway
+resource "aws_nat_gateway" "secondary" {
+  provider      = aws.secondary
+  allocation_id = aws_eip.secondary_nat.id
+  subnet_id     = aws_subnet.secondary_public_1.id
+
+  tags = {
+    Name = "${var.project_name}-secondary-nat"
+  }
+
+  depends_on = [aws_internet_gateway.secondary]
+}
+
+# Public Route Table
 resource "aws_route_table" "secondary_public" {
   provider = aws.secondary
   vpc_id   = aws_vpc.secondary.id
@@ -221,7 +267,22 @@ resource "aws_route_table" "secondary_public" {
   }
 }
 
-# Route Table Associations - Secondary
+# Private Route Table
+resource "aws_route_table" "secondary_private" {
+  provider = aws.secondary
+  vpc_id   = aws_vpc.secondary.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.secondary.id
+  }
+
+  tags = {
+    Name = "${var.project_name}-secondary-private-rt"
+  }
+}
+
+# Route Table Associations
 resource "aws_route_table_association" "secondary_public_1" {
   provider       = aws.secondary
   subnet_id      = aws_subnet.secondary_public_1.id
@@ -234,58 +295,14 @@ resource "aws_route_table_association" "secondary_public_2" {
   route_table_id = aws_route_table.secondary_public.id
 }
 
-resource "aws_route_table_association" "secondary_private" {
+resource "aws_route_table_association" "secondary_private_1" {
   provider       = aws.secondary
-  subnet_id      = aws_subnet.secondary_private.id
+  subnet_id      = aws_subnet.secondary_private_1.id
   route_table_id = aws_route_table.secondary_private.id
 }
 
-resource "aws_eip" "secondary_nat" {
-  provider = aws.secondary
-  domain   = "vpc"
-  tags = {
-    Name = "${var.project_name}-secondary-nat-eip"
-  }
-}
-
-resource "aws_nat_gateway" "secondary" {
-  provider      = aws.secondary
-  allocation_id = aws_eip.secondary_nat.id
-  subnet_id     = aws_subnet.secondary_public_1.id
-  
-  tags = {
-    Name = "${var.project_name}-secondary-nat"
-  }
-  
-  depends_on = [aws_internet_gateway.secondary]
-}
-
-resource "aws_route_table" "secondary_private" {
-  provider = aws.secondary
-  vpc_id   = aws_vpc.secondary.id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.secondary.id
-  }
-
-  # Route for VPC peering to primary
-  route {
-    cidr_block                = var.primary_vpc_cidr
-    vpc_peering_connection_id = aws_vpc_peering_connection.primary_to_secondary.id
-  }
-
-  tags = {
-    Name = "${var.project_name}-secondary-private-rt"
-  }
-}
-# Data sources for AZs
-data "aws_availability_zones" "primary" {
-  provider = aws.primary
-  state    = "available"
-}
-
-data "aws_availability_zones" "secondary" {
-  provider = aws.secondary
-  state    = "available"
+resource "aws_route_table_association" "secondary_private_2" {
+  provider       = aws.secondary
+  subnet_id      = aws_subnet.secondary_private_2.id
+  route_table_id = aws_route_table.secondary_private.id
 }

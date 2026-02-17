@@ -1,8 +1,8 @@
-# General Variables
+# variables.tf (Updated)
 variable "project_name" {
   description = "Project name for resource naming"
   type        = string
-  default     = "disaster-recovery-system"
+  default     = "dr-system"
 }
 
 variable "primary_region" {
@@ -17,7 +17,6 @@ variable "secondary_region" {
   default     = "ap-south-1"
 }
 
-# Network Variables
 variable "primary_vpc_cidr" {
   description = "CIDR block for primary VPC"
   type        = string
@@ -30,63 +29,66 @@ variable "secondary_vpc_cidr" {
   default     = "10.1.0.0/16"
 }
 
-# Instance Variables
 variable "instance_type" {
-  description = "EC2 instance type"
+  description = "EC2 instance type for web servers"
   type        = string
-  default     = "t2.micro"
+  default     = "t3.small"
 }
 
 variable "key_name_primary" {
   description = "SSH key name for primary region"
   type        = string
-  default     = "primary-key"
 }
 
 variable "key_name_secondary" {
   description = "SSH key name for secondary region"
   type        = string
-  default     = "secondary-key"
 }
 
-# Database Variables
-variable "mysql_root_password" {
-  description = "MySQL root password"
-  type        = string
-  sensitive   = true
-}
-
-variable "mysql_replication_password" {
-  description = "MySQL replication user password"
-  type        = string
-  sensitive   = true
-}
-
-variable "mysql_app_password" {
-  description = "MySQL application user password"
-  type        = string
-  sensitive   = true
-}
-
+# RDS Variables
 variable "db_name" {
   description = "Database name"
   type        = string
-  default     = "disaster-recovery=-db"
+  default     = "myapp_db"
+}
+
+variable "db_username" {
+  description = "Database master username"
+  type        = string
+  default     = "admin"
+}
+
+variable "db_password" {
+  description = "Database master password"
+  type        = string
+  sensitive   = true
+}
+
+variable "db_instance_class" {
+  description = "RDS instance class"
+  type        = string
+  default     = "db.t3.micro"
 }
 
 # S3 Variables
 variable "s3_bucket_primary" {
-  description = "Primary S3 bucket name (must be globally unique)"
+  description = "Primary S3 bucket name"
   type        = string
 }
 
 variable "s3_bucket_secondary" {
-  description = "Secondary S3 bucket name (must be globally unique)"
+  description = "Secondary S3 bucket name"
   type        = string
 }
 
-# Your IP for SSH access
 variable "allowed_ssh_cidr" {
-  description = "Your IP address for SSH access (format: x.x.x.x/32)"
+  description = "Your IP address for SSH access"
   type        = string
 }
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "production"
+}
+
