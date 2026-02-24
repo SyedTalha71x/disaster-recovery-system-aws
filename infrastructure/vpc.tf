@@ -1,3 +1,18 @@
+# ==========================================
+# DATA SOURCES FOR AVAILABILITY ZONES
+# ==========================================
+
+data "aws_availability_zones" "primary" {
+  provider = aws.primary
+  state    = "available"
+}
+
+data "aws_availability_zones" "secondary" {
+  provider = aws.secondary
+  state    = "available"
+}
+
+
 
 # ==========================================
 # PRIMARY REGION VPC - UPDATED

@@ -32,7 +32,7 @@ resource "aws_instance" "primary_web" {
   vpc_security_group_ids = [aws_security_group.primary_web.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 
-  user_data = templatefile("${path.module}/user-data/web-server.sh", {
+  user_data = templatefile("${path.module}/user-data/web-primary.sh", {
     DB_HOST     = aws_db_instance.primary.address
     DB_NAME     = var.db_name
     DB_USER     = var.db_username
@@ -57,8 +57,8 @@ resource "aws_instance" "secondary_web" {
   vpc_security_group_ids = [aws_security_group.secondary_web.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 
-  user_data = templatefile("${path.module}/user-data/web-server.sh", {
-    DB_HOST     = aws_db_instance.secondary.address  # Read replica endpoint
+  user_data = templatefile("${path.module}/user-data/web-secondary.sh", {
+    DB_HOST     = aws_db_instance.secondary.address # Read replica endpoint
     DB_NAME     = var.db_name
     DB_USER     = var.db_username
     DB_PASSWORD = var.db_password

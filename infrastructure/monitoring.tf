@@ -11,7 +11,7 @@ resource "aws_cloudwatch_metric_alarm" "replication_lag" {
   statistic           = "Average"
   threshold           = "60"
   alarm_description   = "Replication lag exceeded 60 seconds"
-  
+
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.secondary.identifier
   }
@@ -29,7 +29,7 @@ resource "aws_cloudwatch_metric_alarm" "primary_db_cpu" {
   statistic           = "Average"
   threshold           = "80"
   alarm_description   = "Primary DB CPU > 80%"
-  
+
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.primary.identifier
   }

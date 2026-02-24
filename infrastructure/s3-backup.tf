@@ -9,7 +9,7 @@ resource "aws_s3_bucket" "backup" {
   }
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 
@@ -34,13 +34,19 @@ resource "aws_s3_bucket_lifecycle_configuration" "backup" {
     id     = "backup-retention"
     status = "Enabled"
 
+
+    # Added filter block to fix the warning
+    filter {
+      prefix = "" # Empty prefix means apply to all objects
+    }
+
     transition {
       days          = 30
       storage_class = "STANDARD_IA"
     }
 
     expiration {
-      days = 90
+      days = var.backup_retention_days
     }
   }
 }

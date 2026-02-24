@@ -1,4 +1,4 @@
-# variables.tf (Updated)
+# variables.tf (Complete Updated Version)
 variable "project_name" {
   description = "Project name for resource naming"
   type        = string
@@ -92,3 +92,51 @@ variable "environment" {
   default     = "production"
 }
 
+# ==========================================
+# MISSING VARIABLES ADDED HERE
+# ==========================================
+
+variable "backup_retention_days" {
+  description = "Number of days to keep backups"
+  type        = number
+  default     = 90
+}
+
+variable "monitoring_email" {
+  description = "Email for CloudWatch notifications"
+  type        = string
+  default     = "syedtalha71x@gmail.com"
+}
+
+# Optional: Add these if you need them in other files
+variable "mysql_root_password" {
+  description = "MySQL root password (if still used in scripts)"
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
+variable "mysql_replication_password" {
+  description = "MySQL replication password (not needed for RDS but kept for compatibility)"
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
+variable "mysql_app_password" {
+  description = "MySQL app password (not needed for RDS but kept for compatibility)"
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
+# Validation blocks (optional but good practice)
+variable "tags" {
+  description = "Common tags for all resources"
+  type        = map(string)
+  default = {
+    ManagedBy   = "Terraform"
+    Project     = "DisasterRecovery"
+    Environment = "production"
+  }
+}
